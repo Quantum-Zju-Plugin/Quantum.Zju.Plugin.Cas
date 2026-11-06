@@ -45,7 +45,10 @@ public sealed class EmbeddedZjuBrowser : IZjuBrowser
         finally
         {
             web.Handler?.DisconnectHandler();
-            app.CloseWindow(window);
+            if (app.Windows.Contains(window))
+            {
+                app.CloseWindow(window);
+            }
         }
     }
     private static async Task<CookieContainer> ReadCookiesAsync(WebView web)
