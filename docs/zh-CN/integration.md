@@ -7,10 +7,10 @@
 通过宿主 [RPC](glossary.md#rpc) 目录发现 `zju.cas.account`，发送 `{}`。响应值包含：
 
 ```json
-{"provider":"zju","protocol":"cas","isSignedIn":true,"sessionId":"opaque-local-connection-id"}
+{"provider":"zju","protocol":"cas","isSignedIn":true,"sessionId":"opaque-local-connection-id","username":"fictional-student"}
 ```
 
-断开时 `isSignedIn` 为 false，`sessionId` 为 null。该标识会在重新连接时变化，不是学号、已验证的身份声明、浏览器 Cookie 或访问令牌。此调用只读取本地状态，不访问网络。交互登录仅由设置页账号入口发起，后台能力调用不会弹出登录窗口。
+新增的 `username` 字段为 CAS 票据验证返回的账号标识，并非登录时填写的别名。断开时 `isSignedIn` 为 false，`sessionId` 和 `username` 均为 null。该标识会在重新连接时变化，不是学号、已验证的身份声明、浏览器 Cookie 或访问令牌。此调用只读取本地状态，不访问网络。交互登录仅由设置页账号入口发起，后台能力调用不会弹出登录窗口。
 
 ## 服务认证
 

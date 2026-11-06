@@ -3,6 +3,8 @@ $PSNativeCommandUseErrorActionPreference = $true
 Push-Location (Split-Path $PSScriptRoot -Parent)
 try {
     python .standards/.ci/check-adoption.py
+    python -m unittest discover -s tests/packaging -p 'test_*.py'
+    if ($LASTEXITCODE -ne 0) { throw 'Release packaging tests failed.' }
     dotnet restore Quantum.Zju.Plugin.Cas.slnx
     dotnet format Quantum.Zju.Plugin.Cas.slnx --verify-no-changes --no-restore
     dotnet build Quantum.Zju.Plugin.Cas.slnx -c Release --no-restore
@@ -22,7 +24,8 @@ try {
     Copy-Item "src/Quantum.Zju.Plugin.Cas.Native/bin/Release/$target/Quantum.Zju.Plugin.Cas.Native.dll" $output
     Copy-Item LICENSE,NOTICE $output
     Get-ChildItem $output -Filter '*.staticwebassets.*.json' | Remove-Item
-    Compress-Archive -Path "$output/*" -DestinationPath "artifacts/$platform/quantum.zju.plugin.cas.zip" -Force
+    python .ci/package-plugin.py $output $platform
+    if ($LASTEXITCODE -ne 0) { throw 'Release packaging failed.' }
 } finally {
     Pop-Location
 }
