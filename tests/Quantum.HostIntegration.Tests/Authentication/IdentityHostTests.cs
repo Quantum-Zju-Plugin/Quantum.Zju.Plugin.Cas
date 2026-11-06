@@ -49,6 +49,7 @@ public sealed class IdentityHostTests
             {
             });
             Assert.False(account.Value!.Value.GetProperty("isSignedIn").GetBoolean());
+            Assert.Equal(JsonValueKind.Null, account.Value.Value.GetProperty("username").ValueKind);
             var anonymous = await CallAsync("zju.cas.service-ticket", new
             {
                 sessionId = "fictional",
@@ -64,6 +65,10 @@ public sealed class IdentityHostTests
             sessionType.GetField("_client", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, client);
             sessionType.GetField("_sessionId", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, "fictional-connection");
             sessionType.GetField("_userAgent", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, "FictionalBrowser/1.0");
+            sessionType.GetField("_username", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, "fictional-student");
+            Assert.Equal("fictional-student", (await CallAsync("zju.cas.account", new
+            {
+            })).Value!.Value.GetProperty("username").GetString());
             var invalid = await CallAsync("zju.cas.service-ticket", new
             {
                 sessionId = "fictional-connection",
@@ -85,6 +90,7 @@ public sealed class IdentityHostTests
             {
             });
             Assert.False(reloaded.Value!.Value.GetProperty("isSignedIn").GetBoolean());
+            Assert.Equal(JsonValueKind.Null, reloaded.Value.Value.GetProperty("username").ValueKind);
             var impact = manager.GetDisableImpact("quantum.zju.plugin.cas");
             Assert.True((await manager.DisableAsync("quantum.zju.plugin.cas", impact.CatalogRevision)).Succeeded);
             Assert.Empty(accounts.Contributions);

@@ -7,3 +7,5 @@ artifacts/
 *.user
 .vs/
 .DS_Store
+__pycache__/
+*.py[cod]
