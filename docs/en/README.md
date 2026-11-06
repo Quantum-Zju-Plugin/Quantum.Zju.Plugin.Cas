@@ -29,3 +29,7 @@ pwsh .ci/Build.ps1
 ```
 
 The maintained helper restores, verifies formatting, builds, tests and packages. It excludes framework assemblies already supplied by Desktop from the native adapter payload. Run `.ci/Verify-Host.ps1` for discovery, settings contribution and JSON dispatch against the pinned actual host. Tests use fictional data and do not contact the university. Live account files, cookies, personal records and one-off verification scripts/results must remain outside Git. See the [development standards](../../.standards/docs/en/README.md).
+
+## Repository workflow
+
+Owner: XmmShp. Changes to main must use a pull request; administrators follow the same rule. Independent approvals, CI status checks and resolved conversations are not mandatory platform merge gates. Contributors still run relevant verification and disclose failed or unavailable checks in the pull request. CI remains configured for Windows and macOS.
