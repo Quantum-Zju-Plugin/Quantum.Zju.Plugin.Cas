@@ -1,35 +1,44 @@
-# 浙江大学身份插件
-[English](../en/README.md) · [术语表](glossary.md)
+# 浙江大学 CAS 账号插件
 
-插件 ID 为 `quantum.zju.plugin.oidc`，使用已发布的 [SDK](glossary.md#sdk) 0.3.0-rc.3，向 `quantum.settings/accounts` 贡献浙江大学账号区域。宿主必须实现该扩展点；集成测试通过 `.ci/desktop-revision.txt` 固定公开宿主提交，不依赖相邻源码目录。
+[English](../en/README.md) · [术语表](glossary.md) · [集成合约](integration.md)
+
+`quantum.zju.plugin.cas` 提供浙江大学 [CAS](glossary.md#cas) 账号连接，向 `quantum.settings/accounts` 贡献账号区域，并为外部集成插件获取绑定目标服务的认证回跳地址。使用已发布的 [SDK](glossary.md#sdk) 0.3.0-rc.3。Desktop 宿主必须实现该设置扩展点；`.ci/desktop-revision.txt` 固定集成测试使用的公开宿主提交。
 
 ## 登录
 
-打开**设置 → 账号 → 浙江大学账号**，输入旧教务接口使用的账号标识，选择**打开浙大登录页**。原生 [WebView](glossary.md#webview) 打开学校教务登录入口，由学校页面完成密码加密、跳转和额外验证。登录后选择**使用此登录会话**。插件表单不收集密码。目前未启用第三方身份提供方的跨域跳转，请使用学校账号或学校域名内的验证流程。
+打开**设置 → 账号 → 浙江大学 CAS 账号**，选择**打开浙大登录页**。原生 [WebView](glossary.md#webview) 打开学校 CAS 登录页面，由学校处理密码、跳转及额外验证。完成登录后选择**使用此登录会话**。插件表单不再收集账号标识，也不收集密码。
 
-适配器通过原生接口读取包括 [HttpOnly](glossary.md#httponly) 在内的 Cookie。Windows 使用 WebView2，Mac Catalyst 使用 WKWebView。读取覆盖 `/cas/`、`/jwglxt/`、`/api/` 路径；插件会独立验证教务 JSON 只读请求后再接受新会话。替换失败或取消会保留旧会话，不能仅凭 HTTP 200 判断登录成功。
+Windows 使用 WebView2，Mac Catalyst 使用 WKWebView。通过原生 Cookie 管理器获取仅适用于 CAS 认证源的 Cookie，包括 [HttpOnly](glossary.md#httponly) Cookie，同时保留浏览器 [User-Agent](glossary.md#user-agent)。接受连接前，插件会为 CAS 门户本身获取服务票据，不依赖任何教务系统完成登录验证。替换失败或取消会保留原连接；仅凭 HTTP 200 或存在 Cookie 不能证明登录成功。
 
-当前学校入口实际使用 [CAS](glossary.md#cas)。插件名称含 [OIDC](glossary.md#oidc) 并不表示本实现把 CAS 票据当成 OIDC 令牌，也未虚构学校未提供的 OIDC 客户端配置。
+本插件实现 CAS，不是 [OIDC](glossary.md#oidc)，不需要注册 OIDC 客户端。未启用第三方身份提供方的跨域跳转，请使用学校账号或学校域名内的验证流程。
 
-原生适配器是与便携插件入口并列发布的平台程序集，复用宿主的公共 MAUI 框架，不复制宿主源码、不访问宿主内部实现、不改 SDK。不同系统分别打包；macOS 需要独立构建和原生验证。
+## 职责与凭据
 
-## 会话边界
+提供者只负责原生登录、内存中的 CAS 浏览器 Cookie、当前本地连接和票据获取。通过 [RPC](glossary.md#rpc) 暴露 `zju.cas.account` 与 `zju.cas.service-ticket` 两项能力，详见[集成合约](integration.md)。
 
-Cookie 只保留在本地受信任的 .NET 服务中，不进入扩展 JSON、RPC 响应、日志或发布产物。学校浏览器存储可能保留 SSO 会话。**断开本地连接**只释放插件 HTTP 会话，不执行学校全局退出，也不清理宿主其它浏览器数据。账号标识是用户提供给旧接口的路由信息，并非独立的身份声明。
+外部插件选择其已注册的服务地址、消费一次性回跳地址、建立和清理各自站点的 Cookie 或令牌，并实现业务请求与数据解析。提供者不跟随服务回跳、不读取业务接口、不解析教务记录，也不提供通用 HTTP 代理。站点特有的登录链由外部集成负责。
 
-通过 [RPC](glossary.md#rpc) 暴露的 `zjuam.read-resource` 仅支持 `xzzd-todos`、`zdbk-courses`、`zdbk-sections`、`zdbk-selected`、`zdbk-graduation`、`zdbk-introduction`。保留现有请求、响应命名空间以兼容 Zdbk/Xzzd。该能力只允许一个提供者，应替换旧 `quantum.plugin.zjuam`，不能同时启用两个插件。
+CAS Cookie 和密码不会进入贡献数据或 RPC 返回值。服务票据回跳地址则是有意交给请求者的短期凭据，只能立即使用一次，不得记录、持久化或共享给无关代码。已安装插件是本地受信任客户端，这不是匿名公共接口。服务地址必须获得学校认可；提供者还限制为浙大域名下默认端口的 HTTPS 地址，禁止用户信息、片段及预置 ticket 参数。
+
+每个插件运行时支持一个本地账号连接。不透明的 `sessionId` 标识连接代次，不代表学校身份主体或已验证的学号；重新连接会变化，本地断开或插件重新加载后清除。账号能力只报告本地状态，学校会话过期后，下一次票据请求仍可能失败。浏览器可能保留[单点登录](glossary.md#sso)状态。**断开本地连接**仅释放提供者的 HTTP 会话；外部插件须分别清理自己的站点会话，不会因此执行 CAS 全局退出或清理其它浏览器数据。
+
+## 消费方兼容性
+
+0.5 版使用 `quantum.zju.plugin.cas` 插件 ID 及上述两项 CAS 能力。原 `quantum.zju.plugin.oidc` / `quantum.plugin.zjuam` 提供者和 `zjuam.read-resource` 合约不作为别名保留。已有消费方须先采用新合约并自行持有业务读取实现，再升级提供者；本包不会透明提供旧能力。应替换原账号提供者，避免重复贡献账号入口。
 
 ## 构建与维护
 
-需要 .NET 10、匹配的 MAUI 工作负载及 Python 3。Windows 和 Mac 分别构建对应原生目标，在仓库根目录执行：
+需要 .NET 10、匹配的 MAUI 工作负载和 Python 3。在仓库根目录执行：
 
 ```powershell
 git submodule update --init --recursive
 pwsh .ci/Build.ps1
 ```
 
-维护中的构建入口完成还原、格式验证、构建、测试和打包；原生适配器不重复打包由宿主提供的框架程序集。`.ci/Verify-Host.ps1` 使用固定版本真实宿主验证发现、账号贡献和 JSON 调用。测试使用虚构数据，不连接学校。真实账号文件、Cookie、个人记录、一次性验证脚本和结果必须保留在 Git 之外。遵循[开发规范](../../.standards/docs/zh-CN/README.md)。
+维护中的构建入口完成还原、格式验证、构建、测试并打包 `quantum.zju.plugin.cas.zip`。Windows 和 Mac 分别提供原生程序集，发布包复用宿主公共 MAUI 框架。`.ci/Verify-Host.ps1` 使用固定提交的真实宿主验证发现、账号贡献、能力调用与生命周期。测试使用虚构数据，不连接学校。macOS 仍需独立构建与原生验证。
+
+遵循[开发规范](../../.standards/docs/zh-CN/README.md)。真实凭据、Cookie、一次性测试程序及验收记录不进入 Git。
 
 ## 仓库分支流程
 
-负责人：XmmShp。所有 main 变更必须通过 PR，管理员也适用；不强制独立审批、CI 状态通过或讨论解决作为平台合并门槛。提交者仍应运行相关验证，并在 PR 中如实说明失败或无法执行的检查。保留 Windows 和 macOS CI 配置。
+负责人：XmmShp。main 变更必须通过 PR，管理员也适用；不强制独立审批、CI 状态通过或讨论解决作为平台合并门槛。提交者仍需运行相关检查，并在 PR 中如实说明无法执行的验证。保留 Windows 和 macOS CI 配置。

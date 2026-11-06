@@ -1,0 +1,16 @@
+{
+  "id": "quantum.zju.plugin.cas",
+  "version": "0.5.0",
+  "entryAssembly": "Quantum.Zju.Plugin.Cas.dll",
+  "capabilities": {
+    "provides": [
+      "zju.cas.account",
+      "zju.cas.service-ticket"
+    ],
+    "requires": [],
+    "integrates": []
+  },
+  "ui": {
+    "routes": []
+  }
+}

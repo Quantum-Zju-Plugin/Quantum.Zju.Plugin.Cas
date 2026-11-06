@@ -31,3 +31,23 @@ Windows 的 WebView2 与 Mac Catalyst 的 WKWebView 用于显示学校官方页�
 ## OIDC — 开放身份连接
 
 基于 OAuth 2.0 的身份协议，与此处实际使用的 CAS 路线不同。
+
+<a id="sso"></a>
+## SSO — Single Sign-On（单点登录）
+
+向身份提供方登录一次后，可认证多个已注册服务；各服务仍需建立自己的会话。
+
+<a id="service-ticket"></a>
+## ST — Service Ticket（服务票据）
+
+绑定一个 CAS 服务、仅能校验一次的短期凭据。携带票据的回跳地址属于敏感信息。
+
+<a id="tgc"></a>
+## TGC — Ticket-Granting Cookie（票据授予 Cookie）
+
+代表 CAS 单点登录会话的浏览器 Cookie，由账号提供者私有保存。
+
+<a id="user-agent"></a>
+## User-Agent — 浏览器身份请求头
+
+浏览器发送的 HTTP 客户端标识。获取票据时保留它，因为认证服务可能将会话绑定到该标识。
