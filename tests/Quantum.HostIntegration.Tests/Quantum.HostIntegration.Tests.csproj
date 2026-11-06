@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable><QuantumDesktopRoot>$(MSBuildThisFileDirectory)../../.ci-dependencies/Quantum.Desktop</QuantumDesktopRoot></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(QuantumDesktopRoot)/src/Quantum/Quantum.csproj" />
+    <ProjectReference Include="../../src/Quantum.Zju.Plugin.Oidc/Quantum.Zju.Plugin.Oidc.csproj" ReferenceOutputAssembly="false" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" /><PackageReference Include="xunit" /><PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+  </ItemGroup>
+  <Target Name="CopyPluginFixture" AfterTargets="Build">
+    <ItemGroup><Fixture Include="../../src/Quantum.Zju.Plugin.Oidc/bin/$(Configuration)/net10.0/Quantum.Zju.Plugin.Oidc.dll;../../src/Quantum.Zju.Plugin.Oidc/bin/$(Configuration)/net10.0/HtmlAgilityPack.dll;../../src/Quantum.Zju.Plugin.Oidc/plugin.json" /></ItemGroup>
+    <Copy SourceFiles="@(Fixture)" DestinationFolder="$(TargetDir)PluginFixture" />
+  </Target>
+</Project>

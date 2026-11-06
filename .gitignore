@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+artifacts/
+.ci-dependencies/
+*.env
+*.log
+*.user
+.vs/
+.DS_Store

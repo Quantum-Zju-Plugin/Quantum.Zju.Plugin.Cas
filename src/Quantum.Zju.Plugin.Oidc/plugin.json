@@ -1,0 +1,15 @@
+{
+  "id": "quantum.zju.plugin.oidc",
+  "version": "0.4.0",
+  "entryAssembly": "Quantum.Zju.Plugin.Oidc.dll",
+  "capabilities": {
+    "provides": [
+      "zjuam.read-resource"
+    ],
+    "requires": [],
+    "integrates": []
+  },
+  "ui": {
+    "routes": []
+  }
+}

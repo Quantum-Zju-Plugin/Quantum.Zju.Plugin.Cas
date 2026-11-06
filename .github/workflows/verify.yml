@@ -1,0 +1,30 @@
+name: Verify
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install MAUI workload
+        shell: pwsh
+        run: dotnet workload install maui --skip-manifest-update
+      - name: Verify and package
+        shell: pwsh
+        run: ./.ci/Build.ps1
+      - name: Verify pinned host integration
+        shell: pwsh
+        run: ./.ci/Verify-Host.ps1
