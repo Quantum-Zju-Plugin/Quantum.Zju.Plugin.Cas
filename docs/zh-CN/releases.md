@@ -26,4 +26,4 @@
 
 ## 0.5.0 — 2026-11-06
 
-Windows 插件市场版本，提供 `zju.cas.account` 与 `zju.cas.service-ticket`，使用 SDK `0.3.0-rc.3`。业务集成自行处理回跳、站点会话和数据读取。源码：[`711bb453`](https://github.com/XmmShp/Quantum.Zju.Plugin.Cas/commit/711bb453a8ff48b1dc967cf7918cf11bb2bdf6f8)。此版本未包含或验证 macOS。
+Windows 插件市场版本，提供 `zju.cas.account` 与 `zju.cas.service-ticket`，使用 SDK `0.3.0-rc.3`。业务集成自行处理回跳、站点会话和数据读取。源码：[`711bb453`](https://github.com/Quantum-Zju-Plugin/Quantum.Zju.Plugin.Cas/commit/711bb453a8ff48b1dc967cf7918cf11bb2bdf6f8)。此版本未包含或验证 macOS。

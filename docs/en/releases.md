@@ -26,4 +26,4 @@ Run `.ci/Build.ps1` and `.ci/Verify-Host.ps1`. Packaging emits `artifacts/<platf
 
 ## 0.5.0 — 2026-11-06
 
-Windows marketplace release providing `zju.cas.account` and `zju.cas.service-ticket` with SDK `0.3.0-rc.3`. Business integrations own their callbacks, website sessions and data readers. Source: [`711bb453`](https://github.com/XmmShp/Quantum.Zju.Plugin.Cas/commit/711bb453a8ff48b1dc967cf7918cf11bb2bdf6f8). macOS was not included or validated in this release.
+Windows marketplace release providing `zju.cas.account` and `zju.cas.service-ticket` with SDK `0.3.0-rc.3`. Business integrations own their callbacks, website sessions and data readers. Source: [`711bb453`](https://github.com/Quantum-Zju-Plugin/Quantum.Zju.Plugin.Cas/commit/711bb453a8ff48b1dc967cf7918cf11bb2bdf6f8). macOS was not included or validated in this release.

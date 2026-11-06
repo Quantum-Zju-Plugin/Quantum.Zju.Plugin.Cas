@@ -11,7 +11,7 @@ import subprocess
 import xml.etree.ElementTree as ET
 import zipfile
 
-REPOSITORY = "https://github.com/XmmShp/Quantum.Zju.Plugin.Cas"
+REPOSITORY = "https://github.com/Quantum-Zju-Plugin/Quantum.Zju.Plugin.Cas"
 ROOT = Path(__file__).resolve().parents[1]
 
 
