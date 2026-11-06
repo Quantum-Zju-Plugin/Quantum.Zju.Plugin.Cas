@@ -1,9 +1,0 @@
-@namespace Quantum.OfficialPlugins.Zjuam.UI.Pages
-@using Microsoft.AspNetCore.Components.Web
-<section>
-    <p>@Text("Sign in using the official ZJU page. Your password is never collected by this plugin.", "在浙大官方页面登录，插件不收集密码。")</p>
-    <label>@Text("Account identifier", "账号标识") <input @bind="_username" autocomplete="username" disabled="@_busy" /></label>
-    <button @onclick="SignInAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_username))">@Text("Open ZJU sign-in", "打开浙大登录页")</button>
-    <button @onclick="SignOutAsync" disabled="@_busy">@Text("Disconnect locally", "断开本地连接")</button>
-    <p role="status">@_status</p>
-</section>

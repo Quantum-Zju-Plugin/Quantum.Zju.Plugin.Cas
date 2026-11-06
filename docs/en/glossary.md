@@ -31,3 +31,23 @@ An SSO protocol using service-bound tickets and application sessions.
 ## OIDC — OpenID Connect
 
 An identity protocol over OAuth 2.0; distinct from the CAS route implemented here.
+
+<a id="sso"></a>
+## SSO — Single Sign-On
+
+One identity-provider login can authenticate multiple registered services; each service still establishes its own session.
+
+<a id="service-ticket"></a>
+## ST — Service Ticket
+
+A short-lived credential bound to one CAS service and valid for one validation attempt. A callback containing it is sensitive.
+
+<a id="tgc"></a>
+## TGC — Ticket-Granting Cookie
+
+The browser cookie representing the CAS single-sign-on session. It remains private to the account provider.
+
+<a id="user-agent"></a>
+## User-Agent — Browser identity header
+
+The HTTP client identifier sent by the browser. Ticket acquisition preserves it because the authentication service can bind the session to it.

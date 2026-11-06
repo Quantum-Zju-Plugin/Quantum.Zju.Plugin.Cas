@@ -4,20 +4,20 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Quantum.Plugin.Abstraction;
 using Quantum.Plugins;
 using System.Net;
-using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
 using Xunit;
+
 namespace Quantum.HostIntegration.Tests.Authentication;
 
 public sealed class IdentityHostTests
 {
     [Fact]
-    public async Task RealHostDiscoversAccountsAndDispatchesReadOnlyResourcesAcrossReload()
+    public async Task RealHostDiscoversCasAccountAndDispatchesServiceTicketsAcrossReload()
     {
         var root = Directory.CreateTempSubdirectory("quantum-zju-host-");
         var modules = Path.Combine(root.FullName, "Modules");
-        var pluginRoot = Directory.CreateDirectory(Path.Combine(modules, "quantum.zju.plugin.oidc"));
+        var pluginRoot = Directory.CreateDirectory(Path.Combine(modules, "quantum.zju.plugin.cas"));
         foreach (var file in Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "PluginFixture")))
         {
             File.Copy(file, Path.Combine(pluginRoot.FullName, Path.GetFileName(file)));
@@ -33,44 +33,62 @@ public sealed class IdentityHostTests
             QuantumExtensionSnapshot? accounts = null;
             using var observation = catalog.Extensions.Observe("quantum.settings/accounts", 1, snapshot => accounts = snapshot);
             var contribution = Assert.Single(accounts!.Contributions);
-            Assert.Equal("quantum.zju.plugin.oidc", contribution.PluginId);
-            Assert.Equal("Quantum.OfficialPlugins.Zjuam.UI.Pages.ZjuAccount", contribution.Value.GetProperty("component").GetString());
+            Assert.Equal("quantum.zju.plugin.cas", contribution.PluginId);
+            Assert.Equal("Quantum.Zju.Plugin.Cas.UI.Pages.ZjuAccount", contribution.Value.GetProperty("component").GetString());
             Assert.Equal(3, contribution.Value.EnumerateObject().Count());
             using var router = new PluginRpcRouter(catalog);
             var context = new PluginRpcCallContext("test.caller", "test", new Dictionary<string, JsonElement>());
             var capabilities = await CallAsync(QuantumCapabilityCatalog.CapabilityName, new
             {
             });
-            Assert.Contains(capabilities.Value!.Value.GetProperty("capabilities").EnumerateArray(), item => item.GetProperty("name").GetString() == "zjuam.read-resource");
-            var anonymous = await CallAsync("zjuam.read-resource", new
+            var names = capabilities.Value!.Value.GetProperty("capabilities").EnumerateArray().Select(item => item.GetProperty("name").GetString()).ToArray();
+            Assert.Contains("zju.cas.account", names);
+            Assert.Contains("zju.cas.service-ticket", names);
+            Assert.DoesNotContain("zjuam.read-resource", names);
+            var account = await CallAsync("zju.cas.account", new
             {
-                resource = "xzzd-todos"
             });
-            Assert.Equal("zjuam_sign_in_required", anonymous.ErrorCode);
-            var invalid = await CallAsync("zjuam.read-resource", new
+            Assert.False(account.Value!.Value.GetProperty("isSignedIn").GetBoolean());
+            var anonymous = await CallAsync("zju.cas.service-ticket", new
             {
-                resource = "https://example.invalid/"
+                sessionId = "fictional",
+                serviceUrl = "https://service.zju.edu.cn/callback"
             });
-            Assert.Equal("zjuam_invalid_resource", invalid.ErrorCode);
-            var loaded = catalog.FindPlugin("quantum.zju.plugin.oidc")!;
-            var sessionType = loaded.EntryAssembly!.GetType("Quantum.OfficialPlugins.Zjuam.ZjuamSession", true)!;
+            Assert.Equal("zju_cas_sign_in_required", anonymous.ErrorCode);
+            var loaded = catalog.FindPlugin("quantum.zju.plugin.cas")!;
+            var sessionType = loaded.EntryAssembly!.GetType("Quantum.Zju.Plugin.Cas.ZjuCasSession", true)!;
             var session = loaded.Services!.GetRequiredService(sessionType);
-            using var endpoint = new TodoEndpoint();
-            sessionType.GetField("_client", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, new HttpClient(endpoint));
-            sessionType.GetField("_accountKey", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, "fictional-account");
-            var read = await CallAsync("zjuam.read-resource", new
+            using var endpoint = new TicketEndpoint();
+            var client = new HttpClient(endpoint);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("FictionalBrowser/1.0");
+            sessionType.GetField("_client", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, client);
+            sessionType.GetField("_sessionId", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, "fictional-connection");
+            sessionType.GetField("_userAgent", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, "FictionalBrowser/1.0");
+            var invalid = await CallAsync("zju.cas.service-ticket", new
             {
-                resource = "xzzd-todos"
+                sessionId = "fictional-connection",
+                serviceUrl = "https://attacker.invalid/"
             });
-            Assert.Equal(QuantumRequestStatus.Handled, read.Status);
-            Assert.Equal("fictional-account", read.Value!.Value.GetProperty("accountKey").GetString());
-            Assert.Empty(read.Value.Value.GetProperty("payload").GetProperty("todo_list").EnumerateArray());
-            Assert.True((await manager.ReloadAsync("quantum.zju.plugin.oidc")).Succeeded);
+            Assert.Equal("zju_cas_invalid_service", invalid.ErrorCode);
+            var ticket = await CallAsync("zju.cas.service-ticket", new
+            {
+                sessionId = "fictional-connection",
+                serviceUrl = "https://service.zju.edu.cn/callback"
+            });
+            Assert.Equal(QuantumRequestStatus.Handled, ticket.Status);
+            Assert.Equal("https://service.zju.edu.cn/callback?ticket=ST-fictional", ticket.Value!.Value.GetProperty("callbackUrl").GetString());
+            Assert.Equal("FictionalBrowser/1.0", ticket.Value.Value.GetProperty("userAgent").GetString());
+            Assert.Equal(4, ticket.Value.Value.EnumerateObject().Count());
+            Assert.True((await manager.ReloadAsync("quantum.zju.plugin.cas")).Succeeded);
             Assert.Single(accounts.Contributions);
-            var impact = manager.GetDisableImpact("quantum.zju.plugin.oidc");
-            Assert.True((await manager.DisableAsync("quantum.zju.plugin.oidc", impact.CatalogRevision)).Succeeded);
+            var reloaded = await CallAsync("zju.cas.account", new
+            {
+            });
+            Assert.False(reloaded.Value!.Value.GetProperty("isSignedIn").GetBoolean());
+            var impact = manager.GetDisableImpact("quantum.zju.plugin.cas");
+            Assert.True((await manager.DisableAsync("quantum.zju.plugin.cas", impact.CatalogRevision)).Succeeded);
             Assert.Empty(accounts.Contributions);
-            Assert.True((await manager.EnableAsync("quantum.zju.plugin.oidc")).Succeeded);
+            Assert.True((await manager.EnableAsync("quantum.zju.plugin.cas")).Succeeded);
             Assert.Single(accounts.Contributions);
             async Task<QuantumRequestOutcome<JsonElement?>> CallAsync(string name, object payload)
             {
@@ -87,12 +105,17 @@ public sealed class IdentityHostTests
             }
         }
     }
-    private sealed class TodoEndpoint : HttpMessageHandler
+
+    private sealed class TicketEndpoint : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Assert.Equal("https://courses.zju.edu.cn/api/todos?no-intercept=true", request.RequestUri!.AbsoluteUri);
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { RequestMessage = request, Content = JsonContent.Create(new { todo_list = Array.Empty<object>() }) });
+            Assert.Equal("zjuam.zju.edu.cn", request.RequestUri!.Host);
+            Assert.Equal("/cas/login", request.RequestUri.AbsolutePath);
+            Assert.Equal("FictionalBrowser/1.0", request.Headers.UserAgent.ToString());
+            var response = new HttpResponseMessage(HttpStatusCode.Found);
+            response.Headers.Location = new Uri("https://service.zju.edu.cn/callback?ticket=ST-fictional");
+            return Task.FromResult(response);
         }
     }
 }
