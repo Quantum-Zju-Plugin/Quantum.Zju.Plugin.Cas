@@ -12,7 +12,18 @@ public partial class ZjuAccount(ZjuCasSession session) : ComponentBase, IDisposa
 
     protected override async Task OnInitializedAsync()
     {
-        _account = await session.GetAccountAsync(_lifetime.Token);
+        _busy = true;
+        try
+        {
+            _account = await session.GetAccountAsync(_lifetime.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task SignInAsync()
@@ -51,10 +62,14 @@ public partial class ZjuAccount(ZjuCasSession session) : ComponentBase, IDisposa
         try
         {
             await session.SignOutAsync(_lifetime.Token);
-            _account = await session.GetAccountAsync(_lifetime.Token);
+            _account = new();
         }
         catch (OperationCanceledException)
         {
+        }
+        catch
+        {
+            _error = Text("Sign-out failed. Please try again.", "退出失败，请重试。");
         }
         finally
         {

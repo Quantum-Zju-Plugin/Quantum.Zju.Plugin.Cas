@@ -292,6 +292,10 @@ public sealed class EmbeddedZjuBrowser(Action<string, string> report) : IZjuBrow
         foreach (var item in await native.Configuration.WebsiteDataStore.HttpCookieStore.GetAllCookiesAsync())
         {
             var cookie = new Cookie(item.Name, item.Value, item.Path, item.Domain) { Secure = item.IsSecure, HttpOnly = item.IsHttpOnly };
+            if (item.ExpiresDate is { } expires)
+            {
+                cookie.Expires = (DateTime)expires;
+            }
             if (ZjuLoginPolicy.IsCasCookie(cookie.Domain, cookie.Path))
             {
                 result.Add(cookie);
