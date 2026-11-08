@@ -5,9 +5,16 @@ namespace Quantum.Zju.Plugin.Cas.UI.Pages;
 public partial class ZjuAccount(ZjuCasSession session) : ComponentBase, IDisposable
 {
     private readonly CancellationTokenSource _lifetime = new();
-    private string _status = "";
+    private CasAccount _account = new();
+    private string? _error;
     private bool _busy;
     private static string Text(string en, string zh) => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "zh" ? zh : en;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _account = await session.GetAccountAsync(_lifetime.Token);
+    }
+
     private async Task SignInAsync()
     {
         if (_busy)
@@ -15,18 +22,18 @@ public partial class ZjuAccount(ZjuCasSession session) : ComponentBase, IDisposa
             return;
         }
         _busy = true;
+        _error = null;
         try
         {
             await session.SignInAsync(_lifetime.Token);
-            _status = Text("ZJU CAS account connected.", "已连接浙大 CAS 账号。");
+            _account = await session.GetAccountAsync(_lifetime.Token);
         }
         catch (OperationCanceledException)
         {
-            _status = Text("Sign-in cancelled.", "已取消登录。");
         }
         catch
         {
-            _status = Text("Could not verify the CAS session. Complete official sign-in and check the network, then retry.", "未能验证 CAS 会话，请完成学校官方登录并检查网络后重试。");
+            _error = Text("Sign-in failed. Please try again.", "登录失败，请重试。");
         }
         finally
         {
@@ -35,8 +42,24 @@ public partial class ZjuAccount(ZjuCasSession session) : ComponentBase, IDisposa
     }
     private async Task SignOutAsync()
     {
-        await session.SignOutAsync(_lifetime.Token);
-        _status = Text("Disconnected locally. The university browser session may remain signed in.", "已断开本地连接，学校浏览器会话可能仍保持登录。");
+        if (_busy)
+        {
+            return;
+        }
+        _busy = true;
+        _error = null;
+        try
+        {
+            await session.SignOutAsync(_lifetime.Token);
+            _account = await session.GetAccountAsync(_lifetime.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
     public void Dispose()
     {

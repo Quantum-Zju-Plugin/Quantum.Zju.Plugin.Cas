@@ -7,10 +7,10 @@
 Discover `zju.cas.account` through the host [RPC](glossary.md#rpc) catalog and send `{}`. The response value contains:
 
 ```json
-{"provider":"zju","protocol":"cas","isSignedIn":true,"sessionId":"opaque-local-connection-id"}
+{"provider":"zju","protocol":"cas","isSignedIn":true,"sessionId":"opaque-local-connection-id","username":"fictional-student"}
 ```
 
-When disconnected, `isSignedIn` is false and `sessionId` is null. The identifier changes on reconnect. It is not a student number, verified identity claim, browser cookie or access token. This call checks local state without network access. Only the account settings UI initiates interactive sign-in; background capability calls do not open a login window.
+The additive `username` field is the account identifier returned by CAS ticket validation, not an entered login alias. When disconnected, `isSignedIn` is false and both `sessionId` and `username` are null. The identifier changes on reconnect. It is not a student number, verified identity claim, browser cookie or access token. This call checks local state without network access. Only the account settings UI initiates interactive sign-in; background capability calls do not open a login window.
 
 ## Service authentication
 

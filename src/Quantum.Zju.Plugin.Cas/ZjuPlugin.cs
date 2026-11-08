@@ -1,8 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using NOF.Abstraction;
-using NOF.Infrastructure;
 using Quantum.Plugin.Abstraction;
-using System.Text.Json;
 namespace Quantum.Zju.Plugin.Cas;
 
 public sealed class ZjuPlugin : IQuantumPlugin, IAssemblyInitializer

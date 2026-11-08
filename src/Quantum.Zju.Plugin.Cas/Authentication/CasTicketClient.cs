@@ -41,7 +41,7 @@ internal static class CasTicketClient
         }
     }
 
-    private static (string Key, string Value)[] ReadQuery(Uri uri) => uri.Query.TrimStart('?')
+    internal static (string Key, string Value)[] ReadQuery(Uri uri) => uri.Query.TrimStart('?')
         .Split('&', StringSplitOptions.RemoveEmptyEntries)
         .Select(part => part.Split('=', 2))
         .Select(parts => (Uri.UnescapeDataString(parts[0].Replace('+', ' ')),

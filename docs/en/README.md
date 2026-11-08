@@ -1,14 +1,18 @@
 # ZJU CAS account plugin
 
-[简体中文](../zh-CN/README.md) · [Glossary](glossary.md) · [Integration contract](integration.md)
+[简体中文](../zh-CN/README.md) · [Glossary](glossary.md) · [Integration contract](integration.md) · [Releases](releases.md)
 
 `quantum.zju.plugin.cas` provides a Zhejiang University [CAS](glossary.md#cas) account connection, contributes an account section to `quantum.settings/accounts`, and issues service-bound authentication callbacks for external integration plugins. It uses the published [SDK](glossary.md#sdk) 0.3.0-rc.3. The Desktop host must implement that settings extension point; `.ci/desktop-revision.txt` pins the public host used for integration tests.
 
 ## Authentication
 
-Open **Settings → Accounts → ZJU CAS account** and select **Open ZJU sign-in**. The native [WebView](glossary.md#webview) opens the university CAS login page. The university handles passwords, redirects and additional verification. Complete sign-in there, then choose **Use this signed-in session**. No account identifier or password is collected by the plugin form.
+Open **Settings → Accounts → ZJU CAS account** and select **Sign in**. The native [WebView](glossary.md#webview) opens the university CAS login page. The university handles passwords, redirects and additional verification. After the CAS callback is detected and verified, the window closes automatically and settings shows the verified account identifier. Reopening settings restores the current account display. The buttons use the host settings styles; no separate confirmation step is required.
 
-Windows uses WebView2 and Mac Catalyst uses WKWebView. Native cookie managers capture only cookies applicable to the CAS origin, including [HttpOnly](glossary.md#httponly) cookies, plus the browser [User-Agent](glossary.md#user-agent). Before accepting the connection, the plugin obtains a service ticket for the CAS portal itself. No academic website participates in this verification. A failed or cancelled replacement retains the previous local connection. HTTP 200 or cookie presence alone does not prove sign-in.
+If the official page reports that the login page has been idle too long and F5 cannot recover it, the browser automatically starts a fresh login once. It discards the expired flow URL and uses a new login URL while retaining CAS cookies. If the new page also expires, **Reopen** starts another fresh login without an automatic navigation loop. The detector reads only rendered error text and returns a boolean; it does not read form values.
+
+Windows uses WebView2 and Mac Catalyst uses WKWebView. Native cookie managers capture only cookies applicable to the CAS origin, including [HttpOnly](glossary.md#httponly) cookies, plus the browser [User-Agent](glossary.md#user-agent). Before accepting the connection, the plugin obtains a service ticket for the CAS portal itself and validates it at the CAS `serviceValidate` endpoint to retrieve the account identifier. A failed verification keeps the window open with a retry action. No academic website participates in this verification. A failed or cancelled replacement retains the previous local connection. HTTP 200 or cookie presence alone does not prove sign-in.
+
+Settings shows a single action: **Sign in** before login, or the account identifier and **Sign out** after login. To use another account, sign out and then sign in. Before navigating, the native cookie manager removes cookies applicable to the CAS origin, including legacy SSO state. The login uses the standard service flow without a forced renewal parameter. After a verified login, it removes those browser cookies again; the provider's separate in-memory HTTP cookie snapshot remains available for service tickets. This prevents a later login from silently selecting the previous account. Cookies belonging to unrelated hosts and paths are preserved.
 
 This plugin implements CAS, not [OIDC](glossary.md#oidc), and does not require an OIDC client registration. Third-party identity-provider navigation is not enabled; use the university account login or its on-domain verification flow.
 
@@ -20,7 +24,7 @@ External plugins choose their registered service URL, consume the one-use callba
 
 CAS cookies and passwords never appear in contributions or RPC results. The ticket callback is intentionally a short-lived credential for the requested service; consume it immediately, do not log or persist it, and never share it with unrelated code. Installed plugins are trusted local clients, not an anonymous public API. The school must recognize the service URL, and the provider additionally accepts only default-port HTTPS URLs on ZJU domains without user information, fragments or pre-existing ticket parameters.
 
-One local account connection is supported per plugin runtime. Its opaque `sessionId` identifies a connection generation, not a university subject or verified student number. It changes on reconnect and disappears on local disconnect or plugin reload. The account capability reports local state; the next ticket request can still fail if the university session has expired. The browser may retain [SSO](glossary.md#sso) state. **Disconnect locally** releases only the provider's HTTP session; external integrations must discard their own site sessions separately. It does not globally log out CAS or clear unrelated browser data.
+One local account connection is supported per plugin runtime. Its opaque `sessionId` identifies a connection generation, not a university subject or verified student number. It changes on account replacement and disappears on sign-out or plugin reload. The account capability reports local state; the next ticket request can still fail if the university session has expired. **Sign out** releases the provider's HTTP session and account metadata. The login browser does not retain the successful CAS session, so signing in again presents a fresh login. External integrations must discard their own site sessions separately; this does not globally log out CAS in other browsers.
 
 ## Consumer compatibility
 
@@ -35,7 +39,7 @@ git submodule update --init --recursive
 pwsh .ci/Build.ps1
 ```
 
-The maintained helper restores, verifies formatting, builds, tests and packages `quantum.zju.plugin.cas.zip`. Windows and Mac use separate native assemblies; the payload reuses the host's public MAUI framework. Run `.ci/Verify-Host.ps1` to verify discovery, account contributions, capability dispatch and lifecycle against the pinned actual host. Tests use fictional data and do not contact the university. macOS requires its own build and native validation.
+The maintained helper restores, verifies formatting, builds, tests and packages `quantum.zju.plugin.cas-<version>-<platform>.zip`. Windows and Mac use separate native assemblies; the payload reuses the host's public MAUI framework. Run `.ci/Verify-Host.ps1` to verify discovery, account contributions, capability dispatch and lifecycle against the pinned actual host. Tests use fictional data and do not contact the university. macOS requires its own build and native validation.
 
 Follow the [development standards](../../.standards/docs/en/README.md). Live credentials, cookies, one-off test programs and acceptance records remain outside Git.
 
