@@ -21,8 +21,8 @@ public sealed class ZjuPlugin : IQuantumPlugin, IAssemblyInitializer
     }
     public static Task StopAsync(IServiceProvider services, CancellationToken cancellationToken = default)
     {
-        services.GetRequiredService<ZjuCasSession>().CancelSignIn();
+        var stop = services.GetRequiredService<ZjuCasSession>().StopAsync(cancellationToken);
         services.GetRequiredService<AccountContribution>().Dispose();
-        return services.GetRequiredService<ZjuCasSession>().SignOutAsync(cancellationToken);
+        return stop;
     }
 }

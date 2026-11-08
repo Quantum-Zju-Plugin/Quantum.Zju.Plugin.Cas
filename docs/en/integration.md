@@ -10,7 +10,7 @@ Discover `zju.cas.account` through the host [RPC](glossary.md#rpc) catalog and s
 {"provider":"zju","protocol":"cas","isSignedIn":true,"sessionId":"opaque-local-connection-id","username":"fictional-student"}
 ```
 
-The additive `username` field is the account identifier returned by CAS ticket validation, not an entered login alias. When disconnected, `isSignedIn` is false and both `sessionId` and `username` are null. The identifier changes on reconnect. It is not a student number, verified identity claim, browser cookie or access token. This call checks local state without network access. Only the account settings UI initiates interactive sign-in; background capability calls do not open a login window.
+The additive `username` field is the account identifier returned by CAS ticket validation, not an entered login alias. When disconnected, `isSignedIn` is false and both `sessionId` and `username` are null. The opaque `sessionId` changes on reconnect and on restoration after a reload. It is not a student number, verified identity claim, browser cookie or access token. When no account is connected, this call may contact CAS to verify a saved session. Only the account settings UI initiates interactive sign-in; background capability calls do not open a login window.
 
 ## Service authentication
 
